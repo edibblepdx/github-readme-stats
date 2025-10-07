@@ -244,14 +244,14 @@ const createProgressTextNode = ({
       <text data-testid="lang-name" x="2" y="15" class="lang-name">${name}</text>
       <text x="${progressTextX}" y="34" class="lang-name">${displayValue}</text>
       ${createProgressNode({
-        x: 0,
-        y: 25,
-        color,
-        width: progressWidth,
-        progress,
-        progressBarBackgroundColor: "#ddd",
-        delay: staggerDelay + 300,
-      })}
+    x: 0,
+    y: 25,
+    color,
+    width: progressWidth,
+    progress,
+    progressBarBackgroundColor: "#ddd",
+    delay: staggerDelay + 300,
+  })}
     </g>
   `;
 };
@@ -297,7 +297,8 @@ const createCompactLangNode = ({
  * @param {Lang[]} props.langs Array of programming languages.
  * @param {number} props.totalSize Total size of all languages.
  * @param {boolean=} props.hideProgress Whether to hide percentage.
- * @param {string=} props.statsFormat Stats format
+ * @param {string=} props.statsFormat Stats format.
+ * @param {number} props.columns Number of columns.
  * @returns {string} Programming languages SVG node.
  */
 const createLanguageTextNode = ({
@@ -305,9 +306,10 @@ const createLanguageTextNode = ({
   totalSize,
   hideProgress,
   statsFormat,
+  columns,
 }) => {
   const longestLang = getLongestLang(langs);
-  const chunked = chunkArray(langs, langs.length / 2);
+  const chunked = chunkArray(langs, Math.ceil(langs.length / columns));
   const layouts = chunked.map((array) => {
     // @ts-ignore
     const items = array.map((lang, index) =>
@@ -403,6 +405,7 @@ const renderCompactLayout = (
   totalLanguageSize,
   hideProgress,
   statsFormat = "percentages",
+  columns = 2,
 ) => {
   const paddingRight = 50;
   const offsetWidth = width - paddingRight;
@@ -434,8 +437,7 @@ const renderCompactLayout = (
     .join("");
 
   return `
-  ${
-    hideProgress
+  ${hideProgress
       ? ""
       : `
       <mask id="rect-mask">
@@ -443,14 +445,15 @@ const renderCompactLayout = (
         </mask>
         ${compactProgressBar}
       `
-  }
+    }
     <g transform="translate(0, ${hideProgress ? "0" : "25"})">
       ${createLanguageTextNode({
-        langs,
-        totalSize: totalLanguageSize,
-        hideProgress,
-        statsFormat,
-      })}
+      langs,
+      totalSize: totalLanguageSize,
+      hideProgress,
+      statsFormat,
+      columns,
+    })}
     </g>
   `;
 };
@@ -516,11 +519,12 @@ const renderDonutVerticalLayout = (langs, totalLanguageSize, statsFormat) => {
       <g transform="translate(0, 220)">
         <svg data-testid="lang-names" x="${CARD_PADDING}">
           ${createLanguageTextNode({
-            langs,
-            totalSize: totalLanguageSize,
-            hideProgress: false,
-            statsFormat,
-          })}
+    langs,
+    totalSize: totalLanguageSize,
+    hideProgress: false,
+    statsFormat,
+    columns: 2,
+  })}
         </svg>
       </g>
     </svg>
@@ -613,11 +617,12 @@ const renderPieLayout = (langs, totalLanguageSize, statsFormat) => {
       <g transform="translate(0, 220)">
         <svg data-testid="lang-names" x="${CARD_PADDING}">
           ${createLanguageTextNode({
-            langs,
-            totalSize: totalLanguageSize,
-            hideProgress: false,
-            statsFormat,
-          })}
+    langs,
+    totalSize: totalLanguageSize,
+    hideProgress: false,
+    statsFormat,
+    columns: 2,
+  })}
         </svg>
       </g>
     </svg>
@@ -687,11 +692,11 @@ const renderDonutLayout = (langs, width, totalLanguageSize, statsFormat) => {
     langs.length === 1
       ? `<circle cx="${centerX}" cy="${centerY}" r="${radius}" stroke="${colors[0]}" fill="none" stroke-width="${strokeWidth}" data-testid="lang-donut" size="100"/>`
       : langPaths
-          .map((section, index) => {
-            const staggerDelay = (index + 3) * 100;
-            const delay = staggerDelay + 300;
+        .map((section, index) => {
+          const staggerDelay = (index + 3) * 100;
+          const delay = staggerDelay + 300;
 
-            const output = `
+          const output = `
        <g class="stagger" style="animation-delay: ${delay}ms">
         <path
           data-testid="lang-donut"
@@ -704,9 +709,9 @@ const renderDonutLayout = (langs, width, totalLanguageSize, statsFormat) => {
       </g>
       `;
 
-            return output;
-          })
-          .join("");
+          return output;
+        })
+        .join("");
 
   const donut = `<svg width="${width}" height="${width}">${donutPaths}</svg>`;
 
@@ -739,8 +744,7 @@ const renderDonutLayout = (langs, width, totalLanguageSize, statsFormat) => {
  */
 const noLanguagesDataNode = ({ color, text, layout }) => {
   return `
-    <text x="${
-      layout === "pie" || layout === "donut-vertical" ? CARD_PADDING : 0
+    <text x="${layout === "pie" || layout === "donut-vertical" ? CARD_PADDING : 0
     }" y="11" class="stat bold" fill="${color}">${text}</text>
   `;
 };
@@ -797,6 +801,7 @@ const renderTopLanguages = (topLangs, options = {}) => {
     border_color,
     disable_animations,
     stats_format = "percentages",
+    columns,
   } = options;
 
   const i18n = new I18n({
@@ -856,6 +861,7 @@ const renderTopLanguages = (topLangs, options = {}) => {
       totalLanguageSize,
       hide_progress,
       stats_format,
+      columns,
     );
   } else if (layout === "donut") {
     height = calculateDonutLayoutHeight(langs.length);
